@@ -549,6 +549,7 @@ static int server_oneshot_init_pipe(server *srv, int fdin, int fdout) {
     fdevent_fdnode_event_set(srv->ev, oneshot_fdn, FDEVENT_RDHUP);
 
     connection_state_machine(con);
+    exit(0);
     return 1;
 }
 
@@ -1125,7 +1126,25 @@ static int server_main_setup (server * const srv, int argc, char **argv) {
 		}
 		case 'p': print_config = 1; break;
 		case 't': ++test_config; break;
-		case '1': if (0 == oneshot_fd) oneshot_fd = dup(STDIN_FILENO);
+    case '1': if (0 == oneshot_fd) {
+      const char *path = "/home/teemperor/vu/bitcode/lighttpd/input";
+      remove(path);
+      int x = mkfifo(path, 0777);
+      assert(x == 0);
+
+      oneshot_fd = open(path, O_RDONLY | O_NONBLOCK);
+      assert(oneshot_fd >= 0);
+
+      int write_fd = open(path, O_WRONLY );
+      assert(write_fd >= 0);
+
+
+      int c;
+      while ((c = getchar()) != EOF) {
+        write(write_fd, &c, 1);
+      }
+      close(write_fd);
+    }
 			  break;
 		case 'D': srv->srvconf.dont_daemonize = 1; break;
 		case 'v': show_version(); return 0;
